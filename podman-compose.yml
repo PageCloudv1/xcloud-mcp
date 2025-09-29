@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  xcloud-mcp:
+    build:
+      context: .
+      target: development
+    ports:
+      - "8000:8000"
+      - "5678:5678" # Port for the Python debugger
+    volumes:
+      - .:/app
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}

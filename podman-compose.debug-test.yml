@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  test-runner:
+    build:
+      context: .
+      target: test # Use the same test image
+    ports:
+      - "5679:5678" # Expose debugger on a different host port (5679)
+    volumes:
+      - .:/app
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    # Override the command to run pytest with the debugger
+    command: ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "-m", "pytest"]

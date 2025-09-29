@@ -1,0 +1,18 @@
+[Unit]
+Description=xCloud MCP Server Container
+After=network.target
+
+[Service]
+User=your_user # TODO: Change to the user that will run the container
+Group=your_group # TODO: Change to the group of the user
+
+Restart=always
+ExecStartPre=-/usr/bin/podman rm -f xcloud-mcp-server
+ExecStart=/usr/bin/podman run --name xcloud-mcp-server -p 8080:8000 \
+  --env-file /path/to/your/.env \ # TODO: Update the path to your .env file
+  localhost/xcloud-mcp:latest
+ExecStop=/usr/bin/podman stop -t 10 xcloud-mcp-server
+
+[Install]
+WantedBy=multi-user.target
+
