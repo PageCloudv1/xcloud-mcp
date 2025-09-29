@@ -15,57 +15,91 @@ This project is containerized using Podman and configured for development with V
 
 ### Setup
 
-1.  **Clone the repository:**
-    ```bash
-    git clone <repository-url>
-    cd xcloud-mcp
-    ```
+1. **Clone the repository:**
 
-2.  **Create the environment file:**
+   ```bash
+   git clone <repository-url>
+   cd xcloud-mcp
+   ```
 
-    Create a `.env` file in the root of the project and add your API keys.
+2. **Create the environment file:**
 
-    ```env
-    # .env
-    GITHUB_TOKEN=your_github_personal_access_token
-    GEMINI_API_KEY=your_gemini_api_key
-    ```
+   Create a `.env` file in the root of the project and add your API keys.
 
-3.  **Open with VS Code:**
-    ```bash
-    code .
-    ```
+   ```env
+   # .env
+   GITHUB_TOKEN=your_github_personal_access_token
+   GEMINI_API_KEY=your_gemini_api_key
+   ```
+
+3. **Open the workspace:**
+
+   ```bash
+   # Open the complete workspace (recommended)
+   code xcloud-mcp.code-workspace
+
+   # Or open as regular folder
+   code .
+   ```
 
 ## 💻 Development Workflow
 
 ### Running the Application
 
-1.  Open the Command Palette (`Ctrl+Shift+P`).
-2.  Run the task **`Tasks: Run Build Task`**. This will execute the default `Compose Up (Dev)` task.
-3.  This builds the development container and starts the server with hot-reloading enabled.
+1. Open the Command Palette (`Ctrl+Shift+P`).
+2. Run the task **`Tasks: Run Build Task`**. This will execute the default `Compose Up (Dev)` task.
+3. This builds the development container and starts the server with hot-reloading enabled.
 
 ### Debugging the Application
 
-1.  Ensure the application is running via the `Compose Up (Dev)` task.
-2.  Go to the "Run and Debug" panel in VS Code.
-3.  Select **`Python: Attach to App`** from the dropdown and click the green play button.
-4.  The debugger will attach to the running server. You can now set breakpoints in `server.py`.
+1. Ensure the application is running via the `Compose Up (Dev)` task.
+2. Go to the "Run and Debug" panel in VS Code.
+3. Select **`Python: Attach to App`** from the dropdown and click the green play button.
+4. The debugger will attach to the running server. You can now set breakpoints in `server.py`.
 
 ## 🧪 Testing Workflow
 
 ### Running Tests
 
-1.  Open the Command Palette (`Ctrl+Shift+P`).
-2.  Run the task **`Tasks: Run Task`** and select **`Run Tests`**.
-3.  This will build the test container and run the `pytest` suite. The output will be shown in the terminal.
+1. Open the Command Palette (`Ctrl+Shift+P`).
+2. Run the task **`Tasks: Run Task`** and select **`Run Tests`**.
+3. This will build the test container and run the `pytest` suite. The output will be shown in the terminal.
 
 ### Debugging Tests
 
-1.  Open the Command Palette (`Ctrl+Shift+P`) and run the task **`Debug Tests`**. This will start the test container and wait for a debugger to attach.
-2.  Go to the "Run and Debug" panel.
-3.  Select **`Python: Attach to Tests`** from the dropdown and click the green play button.
-4.  The debugger will attach to the test runner. You can now set breakpoints in your test files (e.g., `tests/test_server.py`).
+1. Open the Command Palette (`Ctrl+Shift+P`) and run the task **`Debug Tests`**. This will start the test container and wait for a debugger to attach.
+2. Go to the "Run and Debug" panel.
+3. Select **`Python: Attach to Tests`** from the dropdown and click the green play button.
+4. The debugger will attach to the test runner. You can now set breakpoints in your test files (e.g., `tests/test_server.py`).
 
 ## 🛑 Stopping the Application
 
 - To stop the main application or the debug test server, open the Command Palette (`Ctrl+Shift+P`) and run the task **`Compose Down`**.
+
+## 🖥️ Alternative: Command Line Usage
+
+If you prefer using the command line directly instead of VS Code tasks:
+
+### Start the Application
+
+```bash
+podman-compose up --build
+```
+
+### Run Tests
+
+```bash
+podman-compose -f podman-compose.test.yml up --build --abort-on-container-exit
+```
+
+### Stop Services
+
+```bash
+podman-compose down
+```
+
+### View Logs
+
+```bash
+podman-compose logs -f
+```
