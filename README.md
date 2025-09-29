@@ -199,7 +199,7 @@ The GitHub Copilot integration works differently from other MCP clients. Instead
 
 ```text
 "Analyze the xcloud-bot repository and tell me what can be improved"
-"Create a CI workflow issue for the xcloud-mcp repository"  
+"Create a CI workflow issue for the xcloud-mcp repository"
 "Show me the last 10 builds for PageCloudv1/xcloud-docs"
 "List all xCloud repositories that don't have workflows"
 ```
@@ -212,6 +212,121 @@ The GitHub Copilot integration works differently from other MCP clients. Instead
 - `get_xcloud_repositories` - xCloud ecosystem repository listing
 
 **Note**: The MCP server must be running locally for Copilot to access the tools.
+
+### 🧠 Making Copilot Smarter
+
+You can enhance Copilot's capabilities by setting up custom instructions, customizing the development environment, and configuring Model Context Protocol (MCP) servers.
+
+#### Custom Instructions Setup
+
+1. **Repository-Level Instructions**:
+   - The `.github/copilot-instructions.md` file provides project-specific guidance to Copilot
+   - Copilot automatically detects and uses these instructions when working in this repository
+   - Instructions define the xCloud MCP server's role and available tools
+
+2. **Personal Copilot Configuration**:
+
+   ```bash
+   # In VS Code, access Copilot settings:
+   # 1. Open Command Palette (Ctrl+Shift+P / Cmd+Shift+P)
+   # 2. Search "Copilot: Open Settings"
+   # 3. Configure your preferences
+   ```
+
+3. **Workspace-Specific Settings**:
+
+   ```json
+   // In .vscode/settings.json
+   {
+     "github.copilot.enable": {
+       "*": true,
+       "yaml": true,
+       "plaintext": false
+     },
+     "github.copilot.editor.enableAutoCompletions": true
+   }
+   ```
+
+#### MCP Server Configuration for Copilot
+
+1. **Enable MCP Integration**:
+
+   ```bash
+   # Ensure your MCP server is running
+   uv run --with fastmcp fastmcp run src/xcloud_mcp/main.py
+
+   # Or with container
+   podman run --rm -i --env-file .env localhost/xcloud-mcp_xcloud-mcp:latest fastmcp run xcloud_mcp/main.py
+   ```
+
+2. **VS Code MCP Extension** (if available):
+
+   ```bash
+   # Install MCP extension for VS Code
+   code --install-extension mcp-extension-id
+   ```
+
+3. **Configure MCP in VS Code settings**:
+
+   ```json
+   // In settings.json
+   {
+     "mcp.servers": {
+       "xcloud-mcp": {
+         "command": "podman",
+         "args": ["run", "--rm", "-i", "--env-file", ".env", "localhost/xcloud-mcp_xcloud-mcp:latest", "fastmcp", "run", "xcloud_mcp/main.py"]
+       }
+     }
+   }
+   ```
+
+#### Development Environment Customization
+
+1. **Workspace Configuration**:
+
+   ```bash
+   # Open the xCloud MCP workspace
+   code xcloud-mcp.code-workspace
+   ```
+
+2. **Environment Variables**:
+
+   ```bash
+   # Ensure tokens are configured
+   export GITHUB_TOKEN=ghp_your_token_here
+   export GEMINI_API_KEY=your_gemini_key_here
+   ```
+
+3. **Debugging Setup**:
+
+   ```json
+   // In .vscode/launch.json (already configured)
+   {
+     "name": "Attach to MCP Server",
+     "type": "python",
+     "request": "attach",
+     "connect": {
+       "host": "localhost",
+       "port": 5678
+     }
+   }
+   ```
+
+#### Best Practices for Copilot + MCP
+
+1. **Use Natural Language**: Ask Copilot questions in plain English about repository analysis, CI/CD status, or workflow management
+
+2. **Leverage Context**: Copilot understands the project structure and can suggest relevant xCloud operations
+
+3. **Combine Tools**: Ask for complex operations that use multiple MCP tools together
+
+4. **Iterate**: Use Copilot's suggestions to refine your automation workflows
+
+**Learn More**:
+
+- [GitHub Copilot Documentation](https://docs.github.com/copilot)
+- [VS Code Copilot Tips](https://code.visualstudio.com/docs/copilot/overview)
+- [Model Context Protocol Specification](https://spec.modelcontextprotocol.io/)
 
 #### Gemini Integration
 
