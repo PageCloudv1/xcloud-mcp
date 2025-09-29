@@ -279,7 +279,7 @@ async def test_monitor_ci_status_exception(mock_github_api):
     """
     # Arrange
     repo = "invalid/format/repo"
-    # A exceção será capturada pela ferramenta e formatada no novo padrão
+    # The exception will be captured by the tool and formatted in the new pattern
     mock_github_api.side_effect = Exception("Connection error")
 
     # Act
