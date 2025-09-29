@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "xcloud-mcp": {
+      "command": "podman",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "--env-file",
+        "C:\\Users\\Usuario\\Documents\\PageCloud\\PageCloudv1-repos\\xcloud-mcp\\.env",
+        "localhost/xcloud-mcp_xcloud-mcp:latest",
+        "fastmcp",
+        "run",
+        "xcloud_mcp/main.py"
+      ]
+    }
+  }
+}
