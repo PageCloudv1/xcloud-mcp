@@ -1,0 +1,25 @@
+name: CD - Deploy to Production
+
+on:
+  workflow_run:
+    workflows: ["Publish Container Image"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd /path/to/your/project # TODO: Update with the absolute path to the project on your server
+            git pull
+            sudo systemctl restart xcloud-mcp.service

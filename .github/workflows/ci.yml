@@ -1,0 +1,28 @@
+name: CI - Run Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Podman
+      uses: redhat-actions/podman-login@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Install podman-compose
+      run: pip install podman-compose
+
+    - name: Run tests with podman-compose
+      run: podman-compose -f podman-compose.test.yml up --build --abort-on-container-exit
