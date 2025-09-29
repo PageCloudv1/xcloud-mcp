@@ -26,27 +26,7 @@ GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GITHUB_API_BASE = "https://api.github.com"
 
-async def run_command(command: str) -> Dict:
-    """Executa comando shell de forma assíncrona"""
-    try:
-        process = await asyncio.create_subprocess_shell(
-            command,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
-        )
-        stdout, stderr = await process.communicate()
-        
-        return {
-            "success": process.returncode == 0,
-            "stdout": stdout.decode(),
-            "stderr": stderr.decode(),
-            "returncode": process.returncode
-        }
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
+
 
 async def github_api_request(endpoint: str, method: str = "GET", data: Dict = None) -> Dict:
     """Faz requisições para a API do GitHub"""
@@ -61,11 +41,8 @@ async def github_api_request(endpoint: str, method: str = "GET", data: Dict = No
         if method == "GET":
             async with session.get(url, headers=headers) as response:
                 return await response.json()
-        elif method == "POST":
-            async with session.post(url, headers=headers, json=data) as response:
-                return await response.json()
-        elif method == "PATCH":
-            async with session.patch(url, headers=headers, json=data) as response:
+        elif method in ["POST", "PATCH"]:
+            async with session.request(method, url, headers=headers, json=data) as response:
                 return await response.json()
 
 @app.tool()
@@ -341,42 +318,4 @@ async def get_xcloud_repositories() -> List[Dict]:
     except Exception as e:
         return {"error": f"Erro: {str(e)}"}
 
-@app.tool()
-async def run_gemini_analysis(prompt: str, context: Dict = None) -> Dict:
-    """
-    Executa análise usando Gemini CLI (integração com ferramentas existentes)
-    
-    Args:
-        prompt: Prompt para análise
-        context: Contexto adicional
-    """
-    try:
-        # Prepara comando gemini_cli
-        context_str = json.dumps(context) if context else "{}"
-        command = f'gemini_cli --prompt="{prompt}" --context=\'{context_str}\''
-        
-        result = await run_command(command)
-        
-        if result["success"]:
-            try:
-                return json.loads(result["stdout"])
-            except json.JSONDecodeError:
-                return {"response": result["stdout"]}
-        else:
-            return {"error": f"Comando falhou: {result['stderr']}"}
-        
-    except Exception as e:
-        return {"error": f"Erro: {str(e)}"}
 
-if __name__ == "__main__":
-    print("🤖 Iniciando xCloud Bot MCP Server...")
-    print("🔗 Ferramentas disponíveis:")
-    print("  • analyze_repository - Análise de repositórios")
-    print("  • create_workflow_issue - Criação de issues")
-    print("  • monitor_ci_status - Monitoramento CI")
-    print("  • get_xcloud_repositories - Lista repositórios xCloud")
-    print("  • run_gemini_analysis - Integração Gemini")
-    print("")
-    print("🌐 Server rodando na porta 8000")
-    
-    app.run(port=8000)

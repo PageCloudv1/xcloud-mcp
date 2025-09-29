@@ -8,14 +8,14 @@ COPY requirements.txt requirements-dev.txt ./
 RUN pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
 
 # Copy the rest of the application
-COPY . .
+COPY src/ .
 
 # Expose port for the application and the debugger
 EXPOSE 8000
 EXPOSE 5678
 
 # Command to run the application with the debugger
-CMD ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "server.py"]
+CMD ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "xcloud_mcp/main.py"]
 
 # Test stage
 FROM development AS test
@@ -33,10 +33,10 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code
-COPY . .
+COPY src/ .
 
 # Expose port for the application
 EXPOSE 8000
 
 # Command to run the application
-CMD ["python", "server.py"]
+CMD ["python", "xcloud_mcp/main.py"]

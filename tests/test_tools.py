@@ -1,5 +1,5 @@
 import pytest
-from server import analyze_repository
+from src.xcloud_mcp.main import analyze_repository
 
 # Mark all tests in this file as async
 pytestmark = pytest.mark.asyncio
@@ -7,7 +7,7 @@ pytestmark = pytest.mark.asyncio
 @pytest.fixture
 def mock_github_api(mocker):
     """Mocks the github_api_request function."""
-    return mocker.patch('server.github_api_request', autospec=True)
+    return mocker.patch('src.xcloud_mcp.main.github_api_request', autospec=True)
 
 async def test_analyze_repository_success(mock_github_api):
     """
