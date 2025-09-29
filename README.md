@@ -179,6 +179,40 @@ Add to your `settings.json`:
 
 Configure in your workspace or user settings with the appropriate command from Options A or B above.
 
+#### GitHub Copilot Integration
+
+The GitHub Copilot integration works differently from other MCP clients. Instead of connecting directly to the MCP server, Copilot uses the server's tools through intelligent orchestration.
+
+**How it works:**
+
+1. **Copilot Instructions**: Located in [`.github/copilot-instructions.md`](.github/copilot-instructions.md)
+2. **Tool Orchestration**: Copilot translates natural language requests into MCP tool calls
+3. **No Direct Connection**: Copilot doesn't connect to the MCP server directly
+
+**Setup for Copilot:**
+
+1. **Ensure MCP server is running** (using any of the options above)
+2. **Copilot automatically detects** the instructions in `.github/copilot-instructions.md`
+3. **Use natural language** to interact with xCloud tools through Copilot
+
+**Example Copilot commands:**
+
+```text
+"Analyze the xcloud-bot repository and tell me what can be improved"
+"Create a CI workflow issue for the xcloud-mcp repository"  
+"Show me the last 10 builds for PageCloudv1/xcloud-docs"
+"List all xCloud repositories that don't have workflows"
+```
+
+**Available Tools via Copilot:**
+
+- `analyze_repository` - Repository health analysis
+- `create_workflow_issue` - Automated issue creation for workflows
+- `monitor_ci_status` - CI/CD pipeline monitoring
+- `get_xcloud_repositories` - xCloud ecosystem repository listing
+
+**Note**: The MCP server must be running locally for Copilot to access the tools.
+
 #### Gemini Integration
 
 See detailed configuration in [`.gemini/README.md`](.gemini/README.md) for Gemini-specific setup.
