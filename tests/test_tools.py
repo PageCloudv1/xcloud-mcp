@@ -62,14 +62,22 @@ async def test_analyze_repository_not_found(mock_github_api):
     """
     # Arrange: Configure the mock to simulate a 'Not Found' error
     repo_url = "nonexistent/repo"
-    mock_github_api.return_value = {"message": "Not Found"}
+    mock_github_api.return_value = {
+        "error": {
+            "type": "GITHUB_API_ERROR",
+            "status_code": 404,
+            "message": "Not Found",
+        }
+    }
 
     # Act
     result = await analyze_repository.fn(repo_url)
 
     # Assert
     assert "error" in result
-    assert result["error"] == "Repositório não encontrado: Not Found"
+    assert result["error"]["type"] == "GITHUB_API_ERROR"
+    assert result["error"]["status_code"] == 404
+    assert result["error"]["message"] == "Not Found"
 
 
 async def test_analyze_repository_invalid_url():
@@ -134,14 +142,21 @@ async def test_create_workflow_issue_api_error(mock_github_api):
     # Arrange
     repo = "PageCloudv1/test-repo"
     workflow_type = "cd"
-    mock_github_api.return_value = {"message": "Repository not found"}
+    mock_github_api.return_value = {
+        "error": {
+            "type": "GITHUB_API_ERROR",
+            "status_code": 404,
+            "message": "Repository not found",
+        }
+    }
 
     # Act
     result = await create_workflow_issue.fn(repo, workflow_type)
 
     # Assert
     assert "error" in result
-    assert "Erro ao criar issue" in result["error"]
+    assert result["error"]["type"] == "GITHUB_API_ERROR"
+    assert "Repository not found" in result["error"]["message"]
 
 
 async def test_create_workflow_issue_with_custom_title(mock_github_api):
@@ -224,14 +239,21 @@ async def test_monitor_ci_status_api_error(mock_github_api):
     """
     # Arrange
     repo = "PageCloudv1/test-repo"
-    mock_github_api.return_value = {"message": "Not Found"}
+    mock_github_api.return_value = {
+        "error": {
+            "type": "GITHUB_API_ERROR",
+            "status_code": 404,
+            "message": "Not Found",
+        }
+    }
 
     # Act
     result = await monitor_ci_status.fn(repo)
 
     # Assert
     assert "error" in result
-    assert "Erro ao buscar workflow runs" in result["error"]
+    assert result["error"]["type"] == "GITHUB_API_ERROR"
+    assert result["error"]["message"] == "Not Found"
 
 
 async def test_monitor_ci_status_empty_runs(mock_github_api):
@@ -257,6 +279,7 @@ async def test_monitor_ci_status_exception(mock_github_api):
     """
     # Arrange
     repo = "invalid/format/repo"
+    # A exceção será capturada pela ferramenta e formatada no novo padrão
     mock_github_api.side_effect = Exception("Connection error")
 
     # Act
@@ -264,6 +287,7 @@ async def test_monitor_ci_status_exception(mock_github_api):
 
     # Assert
     assert "error" in result
+    # A lógica interna da ferramenta captura a exceção e a formata
     assert "Erro: Connection error" in result["error"]
 
 
@@ -322,14 +346,21 @@ async def test_get_xcloud_repositories_api_error(mock_github_api):
     Tests the get_xcloud_repositories tool when GitHub API returns an error.
     """
     # Arrange
-    mock_github_api.return_value = {"message": "Bad credentials"}
+    mock_github_api.return_value = {
+        "error": {
+            "type": "GITHUB_API_ERROR",
+            "status_code": 401,
+            "message": "Bad credentials",
+        }
+    }
 
     # Act
     result = await get_xcloud_repositories.fn()
 
     # Assert
     assert "error" in result
-    assert "Erro ao buscar repositórios" in result["error"]
+    assert result["error"]["type"] == "GITHUB_API_ERROR"
+    assert result["error"]["message"] == "Bad credentials"
 
 
 async def test_get_xcloud_repositories_no_xcloud_repos(mock_github_api):
@@ -402,38 +433,24 @@ async def test_github_api_request_function_exists():
     assert sig.parameters["data"].default is None
 
 
-async def test_github_api_request_invalid_method(mocker):
+
+async def test_github_api_request_method_validation(mocker):
     """
-    Tests github_api_request with an unsupported HTTP method.
-    """
-    # Import here to avoid circular imports during patching
-    from xcloud_mcp.main import github_api_request
-
-    # Act - Test with unsupported method (DELETE)
-    result = await github_api_request("/repos/test/repo", method="DELETE")
-
-    # Assert - Function should return None for unsupported methods
-    assert result is None
-
-
-async def test_github_api_request_method_validation():
-    """
-    Tests github_api_request method parameter validation.
+    Tests github_api_request method parameter validation for supported methods.
     """
     from xcloud_mcp.main import github_api_request
 
-    # Test with unsupported method - should return None
-    result = await github_api_request("/test", method="DELETE")
-    assert result is None
+    # Arrange
+    mock_session = mocker.patch("aiohttp.ClientSession.request")
+    mock_response = mock_session.return_value.__aenter__.return_value
+    mock_response.status = 200
+    mock_response.json.return_value = {"status": "ok"}
 
-    # Test with supported methods - would need network mocking for full test
-    # For now, just verify the function accepts the parameters
-    try:
-        # These will fail due to no GITHUB_TOKEN, but that's expected
-        await github_api_request("/test", method="GET")
-    except Exception as e:
-        # Should fail with network/auth error, not parameter error
-        assert "github_api_request" not in str(e)
+    # Act & Assert for supported methods
+    for method in ["GET", "POST", "PATCH"]:
+        result = await github_api_request("/test", method=method)
+        assert "error" not in result
+        assert result == {"status": "ok"}
 
 
 async def test_github_api_request_url_construction():
