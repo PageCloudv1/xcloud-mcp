@@ -13,12 +13,21 @@ import os
 from typing import List, Dict, Optional
 from datetime import datetime
 import aiohttp
+import logging
+
+# Configuração de logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
 app = FastMCP("xcloud-bot")
 
 @app.custom_route("/health", methods=["GET"])
 async def health_check(req):
     """Health check endpoint"""
+    logging.info("Health check endpoint was called.")
     return {"status": "ok"}
 
 # 🔧 Configuração
@@ -54,9 +63,11 @@ async def analyze_repository(repo_url: str, analysis_type: str = "general") -> D
         repo_url: URL do repositório (ex: PageCloudv1/xcloud-bot)
         analysis_type: Tipo de análise (general, workflows, security, performance)
     """
+    logging.info(f"Iniciando análise do repositório: {repo_url} (Tipo: {analysis_type})")
     try:
         # Extrai owner/repo da URL
         if "/" not in repo_url:
+            logging.warning(f"URL inválida fornecida: {repo_url}")
             return {"error": "URL inválida. Use formato: owner/repo"}
         
         owner, repo = repo_url.split("/")[-2:]
@@ -65,6 +76,7 @@ async def analyze_repository(repo_url: str, analysis_type: str = "general") -> D
         repo_data = await github_api_request(f"/repos/{owner}/{repo}")
         
         if "message" in repo_data:
+            logging.error(f"Repositório não encontrado: {owner}/{repo}")
             return {"error": f"Repositório não encontrado: {repo_data['message']}"}
         
         # Busca workflows
@@ -115,9 +127,11 @@ async def analyze_repository(repo_url: str, analysis_type: str = "general") -> D
         analysis["suggestions"] = suggestions
         analysis["timestamp"] = datetime.now().isoformat()
         
+        logging.info(f"Análise do repositório {repo_url} concluída com sucesso.")
         return analysis
         
     except Exception as e:
+        logging.error(f"Erro na análise do repositório {repo_url}: {str(e)}")
         return {"error": f"Erro na análise: {str(e)}"}
 
 @app.tool()
@@ -130,6 +144,7 @@ async def create_workflow_issue(repo: str, workflow_type: str, title: str = None
         workflow_type: Tipo do workflow (ci, cd, build, test, deploy, main)
         title: Título customizado (opcional)
     """
+    logging.info(f"Tentando criar issue de workflow '{workflow_type}' no repositório {repo}")
     try:
         owner, repo_name = repo.split("/")[-2:]
         
@@ -220,6 +235,7 @@ _Issue criada automaticamente pelo xCloud Bot_"""
         }
         
         if workflow_type not in workflow_templates:
+            logging.error(f"Tipo de workflow inválido solicitado: {workflow_type}")
             return {"error": f"Tipo de workflow inválido: {workflow_type}"}
         
         template = workflow_templates[workflow_type]
@@ -237,6 +253,7 @@ _Issue criada automaticamente pelo xCloud Bot_"""
         )
         
         if "html_url" in result:
+            logging.info(f"Issue {result['number']} criada com sucesso em {repo}")
             return {
                 "success": True,
                 "issue_url": result["html_url"],
@@ -244,9 +261,11 @@ _Issue criada automaticamente pelo xCloud Bot_"""
                 "title": result["title"]
             }
         else:
+            logging.error(f"Erro ao criar issue em {repo}: {result}")
             return {"error": f"Erro ao criar issue: {result}"}
         
     except Exception as e:
+        logging.error(f"Exceção ao criar issue em {repo}: {str(e)}")
         return {"error": f"Erro: {str(e)}"}
 
 @app.tool()
@@ -258,12 +277,14 @@ async def monitor_ci_status(repo: str, limit: int = 10) -> List[Dict]:
         repo: Repositório (owner/repo)
         limit: Número máximo de runs para analisar
     """
+    logging.info(f"Monitorando status de CI para o repositório {repo} (limite: {limit})")
     try:
         owner, repo_name = repo.split("/")[-2:]
         
         runs = await github_api_request(f"/repos/{owner}/{repo_name}/actions/runs?per_page={limit}")
         
         if "workflow_runs" not in runs:
+            logging.error(f"Erro ao buscar workflow runs para {repo}")
             return {"error": "Erro ao buscar workflow runs"}
         
         status_data = []
@@ -279,9 +300,11 @@ async def monitor_ci_status(repo: str, limit: int = 10) -> List[Dict]:
                 "html_url": run["html_url"]
             })
         
+        logging.info(f"Monitoramento de CI para {repo} concluído. {len(status_data)} runs encontradas.")
         return status_data
         
     except Exception as e:
+        logging.error(f"Exceção ao monitorar CI para {repo}: {str(e)}")
         return {"error": f"Erro: {str(e)}"}
 
 @app.tool()
@@ -289,6 +312,7 @@ async def get_xcloud_repositories() -> List[Dict]:
     """
     Lista todos os repositórios da organização PageCloudv1 relacionados ao xCloud
     """
+    logging.info("Buscando repositórios xCloud da organização PageCloudv1")
     try:
         repos = await github_api_request("/orgs/PageCloudv1/repos?per_page=100")
         
@@ -311,11 +335,14 @@ async def get_xcloud_repositories() -> List[Dict]:
                 workflows = await github_api_request(f"/repos/{repo['full_name']}/actions/workflows")
                 repo["has_workflows"] = workflows.get("total_count", 0) > 0
             
+            logging.info(f"Encontrados {len(xcloud_repos)} repositórios xCloud.")
             return xcloud_repos
         else:
+            logging.error(f"Erro ao buscar repositórios da organização: {repos}")
             return {"error": f"Erro ao buscar repositórios: {repos}"}
         
     except Exception as e:
+        logging.error(f"Exceção ao buscar repositórios xCloud: {str(e)}")
         return {"error": f"Erro: {str(e)}"}
 
 
