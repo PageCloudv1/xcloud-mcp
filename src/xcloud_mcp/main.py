@@ -344,5 +344,3 @@ async def get_xcloud_repositories() -> List[Dict]:
     except Exception as e:
         logging.error(f"Exceção ao buscar repositórios xCloud: {str(e)}")
         return {"error": f"Erro: {str(e)}"}
-
-
