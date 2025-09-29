@@ -11,14 +11,38 @@
         "workbench.settings.openDefaultSettings": false,
         "workbench.settings.openDefaultKeybindings": false,
         "workbench.enableExperiments": false,
-        // GitHub - usar apenas configurações do projeto
+        // GitHub Copilot - configuração específica do projeto
         "github.copilot.enable": {
             "*": false,
             "python": true,
             "yaml": true,
             "json": true,
+            "markdown": true,
             "dockerfile": true
         },
+        "github.copilot.advanced": {},
+
+        // MCP Server Configuration
+        "mcp.servers": {
+            "xcloud-mcp": {
+                "command": "podman",
+                "args": [
+                    "run",
+                    "--rm",
+                    "-i",
+                    "--env-file",
+                    "${workspaceFolder}\\.env",
+                    "localhost/xcloud-mcp_xcloud-mcp:latest",
+                    "fastmcp",
+                    "run",
+                    "xcloud_mcp/main.py"
+                ],
+                "env": {
+                    "PYTHONPATH": "/app/src"
+                }
+            }
+        },
+
         "git.useGlobalGitConfiguration": false,
         "git.defaultCloneDirectory": null,
         // Configurações Python específicas do projeto
@@ -92,8 +116,6 @@
         "unwantedRecommendations": [
             "ms-azuretools.vscode-docker",
             "ms-vscode.powershell",
-            "github.copilot",
-            "github.copilot-chat",
             "ms-toolsai.jupyter",
             "ms-python.pylint",
             "github.vscode-pull-request-github",
@@ -360,6 +382,72 @@
                     "echo": true,
                     "reveal": "silent",
                     "focus": false,
+                    "panel": "shared"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "Start MCP Server (uv)",
+                "type": "shell",
+                "command": "uv",
+                "args": [
+                    "run",
+                    "--with",
+                    "fastmcp",
+                    "fastmcp",
+                    "run",
+                    "${workspaceFolder}/src/xcloud_mcp/main.py"
+                ],
+                "group": "build",
+                "detail": "Starts the MCP server directly with uv (no container)",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": true,
+                    "panel": "dedicated"
+                },
+                "problemMatcher": [],
+                "isBackground": true
+            },
+            {
+                "label": "Test MCP Server",
+                "type": "shell",
+                "command": "podman",
+                "args": [
+                    "run",
+                    "--rm",
+                    "-i",
+                    "--env-file",
+                    "${workspaceFolder}\\.env",
+                    "localhost/xcloud-mcp_xcloud-mcp:latest",
+                    "fastmcp",
+                    "run",
+                    "xcloud_mcp/main.py"
+                ],
+                "group": "test",
+                "detail": "Tests if MCP server starts correctly in container",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": true,
+                    "panel": "new"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "Rebuild MCP Container",
+                "type": "shell",
+                "command": "podman-compose",
+                "args": [
+                    "build",
+                    "--no-cache"
+                ],
+                "group": "build",
+                "detail": "Rebuilds the MCP server container from scratch",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": true,
                     "panel": "shared"
                 },
                 "problemMatcher": []
