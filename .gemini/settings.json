@@ -12,7 +12,10 @@
         "fastmcp",
         "run",
         "xcloud_mcp/main.py"
-      ]
+      ],
+      "copilot": {
+        "instructions_file": "C:\\Users\\Usuario\\Documents\\PageCloud\\PageCloudv1-repos\\xcloud-mcp\\.github\\copilot-instructions.md"
+      }
     }
   }
 }
