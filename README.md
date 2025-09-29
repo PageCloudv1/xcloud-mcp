@@ -115,31 +115,50 @@ podman-compose exec xcloud-mcp python -m flake8 src tests
 
 ```
 xcloud-mcp/
-├── src/xcloud_mcp/          # Main application code
-│   ├── __init__.py
-│   └── main.py              # MCP server implementation
-├── tests/                   # Test suite (91% coverage)
-│   ├── test_server.py       # Server tests
-│   └── test_tools.py        # MCP tools tests
-├── deploy/                  # Deployment configurations
-├── .vscode/                 # VS Code settings
-├── requirements.txt         # Production dependencies
-├── requirements-dev.txt     # Development dependencies
-├── pytest.ini              # Test configuration
-├── Containerfile           # Container definition
-├── podman-compose.yml       # Development services
-└── COVERAGE_REPORT.md       # Detailed coverage report
+├── .github/                     # GitHub workflows and configuration
+│   ├── profile/
+│   └── workflows/
+├── .vscode/                     # VS Code settings and tasks
+├── deploy/                      # Deployment configurations
+│   ├── nginx.conf              # Nginx configuration
+│   └── xcloud-mcp.service      # Systemd service
+├── src/                        # Source code
+│   └── xcloud_mcp/             # Main application package
+│       ├── __init__.py
+│       └── main.py             # MCP server implementation
+├── tests/                      # Test suite (91% coverage)
+│   ├── test_server.py          # Server functionality tests
+│   └── test_tools.py           # MCP tools comprehensive tests
+├── CHANGELOG.md                # Version history
+├── CODE_OF_CONDUCT.md          # Community guidelines
+├── Containerfile              # Container definition
+├── CONTRIBUTING.md             # Contribution guidelines
+├── COVERAGE_REPORT.md          # Detailed test coverage report
+├── LICENSE                     # MIT License
+├── podman-compose.yml          # Development orchestration
+├── podman-compose.test.yml     # Test environment
+├── podman-compose.debug-test.yml # Debug test environment
+├── pytest.ini                 # Test configuration
+├── README.md                   # This file
+├── requirements.txt            # Production dependencies
+├── requirements-dev.txt        # Development dependencies
+├── setup-git-config.ps1       # Git configuration script
+├── setup-workspace.ps1         # Workspace setup script
+├── TODO.md                     # Project tasks and roadmap
+└── xcloud-mcp.code-workspace   # VS Code workspace configuration
 ```
 
 ## 🔧 Configuration
 
 ### Environment Variables
+
 ```env
 GITHUB_TOKEN=ghp_your_github_token_here
 GEMINI_API_KEY=your_gemini_api_key_here  # Optional
 ```
 
 ### VS Code Integration
+
 - **Workspace**: `xcloud-mcp.code-workspace`
 - **Tasks**: Build, test, debug, lint
 - **Debugging**: Attach to container
@@ -193,4 +212,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ by PageCloudv1 Team**
+Built with ❤️ by PageCloudv1 Team
