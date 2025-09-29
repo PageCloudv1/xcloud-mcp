@@ -28,9 +28,11 @@ A high-performance **Model Context Protocol (MCP) Server** built with FastMCP, p
 
 ### Prerequisites
 
-- [Podman](https://podman.io/getting-started/installation)
-- [podman-compose](https://github.com/containers/podman-compose)
-- [VS Code](https://code.visualstudio.com/) (recommended)
+- **Python 3.11+**
+- **[uv](https://github.com/astral-sh/uv)** (Python package installer)
+- **GitHub Token** with repository access
+- **[Podman](https://podman.io/getting-started/installation)** (optional, for containerized development)
+- **[VS Code](https://code.visualstudio.com/)** (recommended)
 
 ### Setup
 
@@ -40,26 +42,162 @@ A high-performance **Model Context Protocol (MCP) Server** built with FastMCP, p
    cd xcloud-mcp
    ```
 
-2. **Create environment file:**
+2. **Install uv (if not already installed):**
+
    ```bash
-   cp .env.example .env
-   # Edit .env with your GitHub token
+   # macOS/Linux
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+
+   # Windows (PowerShell)
+   powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
    ```
 
-3. **Start development environment:**
-   ```bash
-   # Using VS Code (recommended)
-   code xcloud-mcp.code-workspace
+3. **Configure environment:**
 
-   # Or using command line
-   podman-compose up --build
+   ```bash
+   # Set environment variables
+   export GITHUB_TOKEN=ghp_your_github_token_here
+   export GEMINI_API_KEY=your_gemini_api_key_here  # Optional
    ```
+
+### Start MCP Server
+
+#### Option A: Direct MCP Server (Recommended)
+
+```bash
+# Run the MCP server using uv and FastMCP
+uv run --with fastmcp fastmcp run src/xcloud_mcp/main.py
+
+# Server will be available for MCP clients
+```
+
+#### Option B: Development Environment (with debugging)
+
+```bash
+# Using VS Code (recommended)
+code xcloud-mcp.code-workspace
+
+# Or using command line
+podman-compose up --build
+```
+
+## 🔧 MCP Client Configuration
+
+The xCloud MCP Server can be configured in multiple ways depending on your client and requirements.
+
+### Option A: Container-based (Recommended)
+
+This is the most reliable approach as it includes all dependencies:
+
+```json
+{
+  "xcloud-mcp": {
+    "command": "podman",
+    "args": [
+      "run",
+      "--rm",
+      "-i",
+      "--env-file",
+      "/absolute/path/to/xcloud-mcp/.env",
+      "localhost/xcloud-mcp_xcloud-mcp:latest",
+      "fastmcp",
+      "run",
+      "xcloud_mcp/main.py"
+    ]
+  }
+}
+```
+
+### Option B: Direct uv execution
+
+For development or when containers aren't preferred:
+
+```json
+{
+  "xcloud-mcp": {
+    "command": "uv",
+    "args": [
+      "run",
+      "--with",
+      "fastmcp",
+      "fastmcp",
+      "run",
+      "/absolute/path/to/xcloud-mcp/src/xcloud_mcp/main.py"
+    ],
+    "env": {
+      "GITHUB_TOKEN": "ghp_your_token_here",
+      "GEMINI_API_KEY": "your_gemini_key_here"
+    }
+  }
+}
+```
+
+### Setup Steps
+
+1. **Prepare container** (for Option A):
+
+   ```bash
+   cd /path/to/xcloud-mcp
+   podman-compose build
+   ```
+
+2. **Configure environment**:
+
+   ```bash
+   # Edit .env file with your tokens
+   GITHUB_TOKEN=ghp_your_github_token_here
+   GEMINI_API_KEY=your_gemini_api_key_here
+   ```
+
+3. **Test configuration**:
+
+   ```bash
+   # Test container approach
+   podman run --rm -i --env-file .env localhost/xcloud-mcp_xcloud-mcp:latest fastmcp run xcloud_mcp/main.py
+
+   # Should show FastMCP banner and "Starting MCP server 'xcloud-bot'"
+   ```
+
+### Client-Specific Configurations
+
+#### Claude Desktop
+
+Add to your `settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "xcloud-mcp": {
+      "command": "podman",
+      "args": ["run", "--rm", "-i", "--env-file", "/path/to/.env", "localhost/xcloud-mcp_xcloud-mcp:latest", "fastmcp", "run", "xcloud_mcp/main.py"]
+    }
+  }
+}
+```
+
+#### VS Code with MCP Extension
+
+Configure in your workspace or user settings with the appropriate command from Options A or B above.
+
+#### Gemini Integration
+
+See detailed configuration in [`.gemini/README.md`](.gemini/README.md) for Gemini-specific setup.
+
+### GitHub & Environment Configuration
+
+The server requires specific configurations:
+
+- **`.env`**: Contains GitHub and Gemini API tokens (never commit this file)
+- **`.github/`**: Contains GitHub workflows and Copilot instructions
+- **`GEMINI.md`**: Configuration and usage guide for Gemini API integration
+- **Environment variables**: Required tokens and API keys for authentication
 
 ## 🧪 Testing
 
 The project has a comprehensive test suite with **91% coverage**:
 
 ### Run Tests
+
 ```bash
 # Using VS Code Task
 Ctrl+Shift+P → "Tasks: Run Task" → "Run Tests"
@@ -69,12 +207,14 @@ podman-compose -f podman-compose.test.yml up --build --abort-on-container-exit
 ```
 
 ### Generate Coverage Report
+
 ```bash
 # Coverage report is automatically generated
 open htmlcov/index.html  # View detailed HTML report
 ```
 
 ### Test Statistics
+
 - **19 total tests** - All passing ✅
 - **4 MCP tools** - Fully tested
 - **Coverage areas**: Success scenarios, error handling, edge cases
@@ -82,6 +222,7 @@ open htmlcov/index.html  # View detailed HTML report
 ## 🐳 Development
 
 ### Development Server
+
 ```bash
 podman-compose up --build
 # Server runs on http://localhost:8000
@@ -89,11 +230,13 @@ podman-compose up --build
 ```
 
 ### Debug in VS Code
+
 1. Start dev container: `Compose Up (Dev)` task
 2. Attach debugger: `Python: Attach to App`
 3. Set breakpoints and debug
 
 ### Available Commands
+
 ```bash
 # Start services
 podman-compose up --build
@@ -113,7 +256,7 @@ podman-compose exec xcloud-mcp python -m flake8 src tests
 
 ## 📁 Project Structure
 
-```
+```text
 xcloud-mcp/
 ├── .github/                     # GitHub workflows and configuration
 │   ├── profile/
