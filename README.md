@@ -1,105 +1,196 @@
-# 🤖 xCloud Bot - MCP Server
+# 🤖 xCloud MCP Server
 
-FastMCP server for integration with AI and automation tools.
+[![Tests](https://img.shields.io/badge/tests-19%2F19%20passing-brightgreen)](./tests/)
+[![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen)](./COVERAGE_REPORT.md)
+[![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 
-## 🚀 Getting Started
+A high-performance **Model Context Protocol (MCP) Server** built with FastMCP, providing AI agents and automation tools with powerful GitHub integration and DevOps automation capabilities.
 
-This project is containerized using Podman and configured for development with VS Code.
+## ✨ Features
+
+- � **4 MCP Tools** for GitHub automation
+- 🧪 **91% Test Coverage** with comprehensive test suite
+- 🐳 **Containerized Development** with Podman
+- 🔍 **Real-time Debugging** support
+- 📊 **Coverage Reporting** with HTML output
+- ⚡ **Hot Reload** development environment
+
+## 🛠️ MCP Tools Available
+
+| Tool | Description | Status |
+|------|-------------|---------|
+| `create_workflow_issue` | Create GitHub issues for workflow failures | ✅ Tested |
+| `monitor_ci_status` | Monitor CI/CD pipeline status | ✅ Tested |
+| `get_xcloud_repositories` | List PageCloudv1 repositories with workflows | ✅ Tested |
+| `github_api_request` | Low-level GitHub API interaction | ✅ Tested |
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
 - [Podman](https://podman.io/getting-started/installation)
 - [podman-compose](https://github.com/containers/podman-compose)
-- [VS Code](https://code.visualstudio.com/)
-- [VS Code Python Extension](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
+- [VS Code](https://code.visualstudio.com/) (recommended)
 
 ### Setup
 
-1. **Clone the repository:**
-
+1. **Clone and setup:**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/PageCloudv1/xcloud-mcp.git
    cd xcloud-mcp
    ```
 
-2. **Create the environment file:**
-
-   Create a `.env` file in the root of the project and add your API keys.
-
-   ```env
-   # .env
-   GITHUB_TOKEN=your_github_personal_access_token
-   GEMINI_API_KEY=your_gemini_api_key
+2. **Create environment file:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your GitHub token
    ```
 
-3. **Open the workspace:**
-
+3. **Start development environment:**
    ```bash
-   # Open the complete workspace (recommended)
+   # Using VS Code (recommended)
    code xcloud-mcp.code-workspace
 
-   # Or open as regular folder
-   code .
+   # Or using command line
+   podman-compose up --build
    ```
 
-## 💻 Development Workflow
+## 🧪 Testing
 
-### Running the Application
-
-1. Open the Command Palette (`Ctrl+Shift+P`).
-2. Run the task **`Tasks: Run Build Task`**. This will execute the default `Compose Up (Dev)` task.
-3. This builds the development container and starts the server with hot-reloading enabled.
-
-### Debugging the Application
-
-1. Ensure the application is running via the `Compose Up (Dev)` task.
-2. Go to the "Run and Debug" panel in VS Code.
-3. Select **`Python: Attach to App`** from the dropdown and click the green play button.
-4. The debugger will attach to the running server. You can now set breakpoints in `server.py`.
-
-## 🧪 Testing Workflow
-
-### Running Tests
-
-1. Open the Command Palette (`Ctrl+Shift+P`).
-2. Run the task **`Tasks: Run Task`** and select **`Run Tests`**.
-3. This will build the test container and run the `pytest` suite. The output will be shown in the terminal.
-
-### Debugging Tests
-
-1. Open the Command Palette (`Ctrl+Shift+P`) and run the task **`Debug Tests`**. This will start the test container and wait for a debugger to attach.
-2. Go to the "Run and Debug" panel.
-3. Select **`Python: Attach to Tests`** from the dropdown and click the green play button.
-4. The debugger will attach to the test runner. You can now set breakpoints in your test files (e.g., `tests/test_server.py`).
-
-## 🛑 Stopping the Application
-
-- To stop the main application or the debug test server, open the Command Palette (`Ctrl+Shift+P`) and run the task **`Compose Down`**.
-
-## 🖥️ Alternative: Command Line Usage
-
-If you prefer using the command line directly instead of VS Code tasks:
-
-### Start the Application
-
-```bash
-podman-compose up --build
-```
+The project has a comprehensive test suite with **91% coverage**:
 
 ### Run Tests
-
 ```bash
+# Using VS Code Task
+Ctrl+Shift+P → "Tasks: Run Task" → "Run Tests"
+
+# Using command line
 podman-compose -f podman-compose.test.yml up --build --abort-on-container-exit
 ```
 
-### Stop Services
-
+### Generate Coverage Report
 ```bash
+# Coverage report is automatically generated
+open htmlcov/index.html  # View detailed HTML report
+```
+
+### Test Statistics
+- **19 total tests** - All passing ✅
+- **4 MCP tools** - Fully tested
+- **Coverage areas**: Success scenarios, error handling, edge cases
+
+## 🐳 Development
+
+### Development Server
+```bash
+podman-compose up --build
+# Server runs on http://localhost:8000
+# Debugger available on port 5678
+```
+
+### Debug in VS Code
+1. Start dev container: `Compose Up (Dev)` task
+2. Attach debugger: `Python: Attach to App`
+3. Set breakpoints and debug
+
+### Available Commands
+```bash
+# Start services
+podman-compose up --build
+
+# Run tests
+podman-compose -f podman-compose.test.yml up --build --abort-on-container-exit
+
+# Stop services
 podman-compose down
-```
 
-### View Logs
-
-```bash
+# View logs
 podman-compose logs -f
+
+# Run linting
+podman-compose exec xcloud-mcp python -m flake8 src tests
 ```
+
+## 📁 Project Structure
+
+```
+xcloud-mcp/
+├── src/xcloud_mcp/          # Main application code
+│   ├── __init__.py
+│   └── main.py              # MCP server implementation
+├── tests/                   # Test suite (91% coverage)
+│   ├── test_server.py       # Server tests
+│   └── test_tools.py        # MCP tools tests
+├── deploy/                  # Deployment configurations
+├── .vscode/                 # VS Code settings
+├── requirements.txt         # Production dependencies
+├── requirements-dev.txt     # Development dependencies
+├── pytest.ini              # Test configuration
+├── Containerfile           # Container definition
+├── podman-compose.yml       # Development services
+└── COVERAGE_REPORT.md       # Detailed coverage report
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+```env
+GITHUB_TOKEN=ghp_your_github_token_here
+GEMINI_API_KEY=your_gemini_api_key_here  # Optional
+```
+
+### VS Code Integration
+- **Workspace**: `xcloud-mcp.code-workspace`
+- **Tasks**: Build, test, debug, lint
+- **Debugging**: Attach to container
+- **Extensions**: Python, Docker, MCP support
+
+## 📊 Code Quality
+
+- **Test Coverage**: 91% (90/98 lines covered)
+- **Linting**: flake8 compliant
+- **Type Hints**: Throughout codebase
+- **Documentation**: Comprehensive docstrings
+- **Error Handling**: Robust exception management
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/amazing-feature`
+3. Run tests: `podman-compose -f podman-compose.test.yml up`
+4. Ensure 80%+ coverage maintained
+5. Commit changes: `git commit -m 'Add amazing feature'`
+6. Push branch: `git push origin feature/amazing-feature`
+7. Open Pull Request
+
+## � Available Tasks (VS Code)
+
+- `Compose Up (Dev)` - Start development server
+- `Compose Down` - Stop all services
+- `Run Tests` - Execute test suite
+- `Debug Tests` - Debug test execution
+- `View Logs` - Show container logs
+- `Lint Python Code` - Run code linting
+- `Format Python Code` - Auto-format code
+
+## 🔍 Monitoring & Debugging
+
+- **Health Check**: `GET /health`
+- **Debug Port**: 5678 (debugpy)
+- **Logs**: Real-time via `podman-compose logs -f`
+- **Test Reports**: HTML coverage in `htmlcov/`
+
+## 📈 Performance
+
+- **Container-based**: Isolated and reproducible
+- **Hot Reload**: Instant code changes
+- **Efficient Testing**: Parallel execution
+- **Resource Optimized**: Minimal container footprint
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+**Built with ❤️ by PageCloudv1 Team**

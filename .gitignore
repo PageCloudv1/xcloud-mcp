@@ -6,6 +6,10 @@ __pycache__/
 *.pyo
 *.pyd
 .pytest_cache/
+*.egg-info/
+.coverage
+coverage.xml
+htmlcov/
 
 # Environment
 .env
@@ -14,3 +18,22 @@ __pycache__/
 
 # VSCode
 .vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+.idea/
+
+# Build artifacts
+build/
+dist/
+
+# Container data
+.container-data/
