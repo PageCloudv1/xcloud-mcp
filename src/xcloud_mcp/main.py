@@ -38,21 +38,36 @@ GITHUB_API_BASE = "https://api.github.com"
 
 
 async def github_api_request(endpoint: str, method: str = "GET", data: Dict = None) -> Dict:
-    """Faz requisições para a API do GitHub"""
+    """Faz requisições para a API do GitHub, com tratamento de erros."""
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json"
     }
     
-    async with aiohttp.ClientSession() as session:
-        url = f"{GITHUB_API_BASE}{endpoint}"
-        
-        if method == "GET":
-            async with session.get(url, headers=headers) as response:
-                return await response.json()
-        elif method in ["POST", "PATCH"]:
-            async with session.request(method, url, headers=headers, json=data) as response:
-                return await response.json()
+    try:
+        async with aiohttp.ClientSession() as session:
+            url = f"{GITHUB_API_BASE}{endpoint}"
+            
+            async with session.request(method, url, headers=headers, json=data if method != "GET" else None) as response:
+                response_data = await response.json()
+                if response.status >= 400:
+                    logging.error(f"GitHub API request failed: {response.status} {response.reason} | URL: {url} | Response: {response_data}")
+                    return {
+                        "error": {
+                            "type": "GITHUB_API_ERROR",
+                            "status_code": response.status,
+                            "message": response_data.get("message", "Erro desconhecido da API do GitHub.")
+                        }
+                    }
+                return response_data
+    except aiohttp.ClientError as e:
+        logging.error(f"Erro de conexão com a API do GitHub: {str(e)}")
+        return {
+            "error": {
+                "type": "NETWORK_ERROR",
+                "message": f"Não foi possível conectar à API do GitHub: {str(e)}"
+            }
+        }
 
 @app.tool()
 async def analyze_repository(repo_url: str, analysis_type: str = "general") -> Dict:
@@ -74,16 +89,21 @@ async def analyze_repository(repo_url: str, analysis_type: str = "general") -> D
         
         # Busca informações do repositório
         repo_data = await github_api_request(f"/repos/{owner}/{repo}")
-        
-        if "message" in repo_data:
-            logging.error(f"Repositório não encontrado: {owner}/{repo}")
-            return {"error": f"Repositório não encontrado: {repo_data['message']}"}
+        if "error" in repo_data:
+            logging.error(f"Falha ao buscar dados do repositório {owner}/{repo}: {repo_data['error']}")
+            return repo_data
         
         # Busca workflows
         workflows = await github_api_request(f"/repos/{owner}/{repo}/actions/workflows")
+        if "error" in workflows:
+            logging.error(f"Falha ao buscar workflows para {owner}/{repo}: {workflows['error']}")
+            return workflows
         
         # Busca runs recentes
         runs = await github_api_request(f"/repos/{owner}/{repo}/actions/runs?per_page=20")
+        if "error" in runs:
+            logging.error(f"Falha ao buscar runs para {owner}/{repo}: {runs['error']}")
+            return runs
         
         # Análise básica
         analysis = {
@@ -252,17 +272,17 @@ _Issue criada automaticamente pelo xCloud Bot_"""
             data=issue_data
         )
         
-        if "html_url" in result:
-            logging.info(f"Issue {result['number']} criada com sucesso em {repo}")
-            return {
-                "success": True,
-                "issue_url": result["html_url"],
-                "issue_number": result["number"],
-                "title": result["title"]
-            }
-        else:
-            logging.error(f"Erro ao criar issue em {repo}: {result}")
-            return {"error": f"Erro ao criar issue: {result}"}
+        if "error" in result:
+            logging.error(f"Erro ao criar issue em {repo}: {result['error']}")
+            return result
+        
+        logging.info(f"Issue {result.get('number')} criada com sucesso em {repo}")
+        return {
+            "success": True,
+            "issue_url": result.get("html_url"),
+            "issue_number": result.get("number"),
+            "title": result.get("title")
+        }
         
     except Exception as e:
         logging.error(f"Exceção ao criar issue em {repo}: {str(e)}")
@@ -283,12 +303,13 @@ async def monitor_ci_status(repo: str, limit: int = 10) -> List[Dict]:
         
         runs = await github_api_request(f"/repos/{owner}/{repo_name}/actions/runs?per_page={limit}")
         
-        if "workflow_runs" not in runs:
-            logging.error(f"Erro ao buscar workflow runs para {repo}")
-            return {"error": "Erro ao buscar workflow runs"}
+        if "error" in runs:
+            logging.error(f"Erro ao buscar workflow runs para {repo}: {runs['error']}")
+            return runs
         
         status_data = []
-        for run in runs["workflow_runs"]:
+        workflow_runs = runs.get("workflow_runs", [])
+        for run in workflow_runs:
             status_data.append({
                 "workflow": run["name"],
                 "status": run["status"],
@@ -316,30 +337,35 @@ async def get_xcloud_repositories() -> List[Dict]:
     try:
         repos = await github_api_request("/orgs/PageCloudv1/repos?per_page=100")
         
-        if isinstance(repos, list):
-            xcloud_repos = [
-                {
-                    "name": repo["name"],
-                    "full_name": repo["full_name"],
-                    "description": repo["description"],
-                    "language": repo["language"],
-                    "html_url": repo["html_url"],
-                    "has_workflows": False  # Será verificado depois
-                }
-                for repo in repos
-                if repo["name"].startswith("xcloud-")
-            ]
+        if "error" in repos:
+            logging.error(f"Erro ao buscar repositórios da organização: {repos['error']}")
+            return repos
             
-            # Verifica se cada repo tem workflows
-            for repo in xcloud_repos:
-                workflows = await github_api_request(f"/repos/{repo['full_name']}/actions/workflows")
+        xcloud_repos = [
+            {
+                "name": repo["name"],
+                "full_name": repo["full_name"],
+                "description": repo["description"],
+                "language": repo["language"],
+                "html_url": repo["html_url"],
+                "has_workflows": False  # Será verificado depois
+            }
+            for repo in repos
+            if repo["name"].startswith("xcloud-")
+        ]
+        
+        # Verifica se cada repo tem workflows
+        for repo in xcloud_repos:
+            workflows = await github_api_request(f"/repos/{repo['full_name']}/actions/workflows")
+            if "error" in workflows:
+                logging.warning(f"Não foi possível verificar workflows para {repo['full_name']}: {workflows['error']}")
+                repo["has_workflows"] = False
+                repo["error_checking_workflows"] = workflows['error']
+            else:
                 repo["has_workflows"] = workflows.get("total_count", 0) > 0
-            
-            logging.info(f"Encontrados {len(xcloud_repos)} repositórios xCloud.")
-            return xcloud_repos
-        else:
-            logging.error(f"Erro ao buscar repositórios da organização: {repos}")
-            return {"error": f"Erro ao buscar repositórios: {repos}"}
+        
+        logging.info(f"Encontrados {len(xcloud_repos)} repositórios xCloud.")
+        return xcloud_repos
         
     except Exception as e:
         logging.error(f"Exceção ao buscar repositórios xCloud: {str(e)}")
