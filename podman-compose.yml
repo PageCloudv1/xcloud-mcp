@@ -9,7 +9,7 @@ services:
       - "8000:8000"
       - "5678:5678" # Port for the Python debugger
     volumes:
-      - .:/app
+      - ./src:/app
     environment:
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - GEMINI_API_KEY=${GEMINI_API_KEY}

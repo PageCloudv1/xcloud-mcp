@@ -7,8 +7,9 @@ WORKDIR /app
 COPY requirements.txt requirements-dev.txt ./
 RUN pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
 
-# Copy the rest of the application
+# Copy the application code and tests
 COPY src/ .
+COPY tests/ ./tests/
 
 # Expose port for the application and the debugger
 EXPOSE 8000

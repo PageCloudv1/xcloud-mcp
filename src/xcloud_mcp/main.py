@@ -16,7 +16,7 @@ import aiohttp
 
 app = FastMCP("xcloud-bot")
 
-@app.route("/health")
+@app.custom_route("/health", methods=["GET"])
 async def health_check(req):
     """Health check endpoint"""
     return {"status": "ok"}

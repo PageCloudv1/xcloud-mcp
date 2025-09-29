@@ -1,6 +1,21 @@
 version: '3.8'
 
+networks:
+  mcp-test-net:
+    driver: bridge
+
 services:
+  mcp-server:
+    build:
+      context: .
+      target: development
+    hostname: mcp-server
+    container_name: mcp-server
+    networks:
+      mcp-test-net:
+        aliases:
+          - mcp-server
+
   test-runner:
     build:
       context: .
@@ -10,3 +25,6 @@ services:
     environment:
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+    network_mode: "bridge"
+    depends_on:
+      - mcp-server

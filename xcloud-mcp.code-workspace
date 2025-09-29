@@ -1,0 +1,369 @@
+{
+    "folders": [
+        {
+            "name": "xCloud MCP Server",
+            "path": "."
+        }
+    ],
+    "settings": {
+        // Configurações de isolamento - não herdar configurações pessoais
+        "workbench.settings.enableNaturalLanguageSearch": false,
+        "workbench.settings.openDefaultSettings": false,
+        "workbench.settings.openDefaultKeybindings": false,
+        "workbench.enableExperiments": false,
+        // GitHub - usar apenas configurações do projeto
+        "github.copilot.enable": {
+            "*": false,
+            "python": true,
+            "yaml": true,
+            "json": true,
+            "dockerfile": true
+        },
+        "git.useGlobalGitConfiguration": false,
+        "git.defaultCloneDirectory": null,
+        // Configurações Python específicas do projeto
+        "python.defaultInterpreterPath": ".venv/bin/python",
+        "python.linting.enabled": true,
+        "python.linting.flake8Enabled": true,
+        "python.linting.pylintEnabled": false,
+        "python.formatting.provider": "black",
+        "python.sortImports.args": [
+            "--profile",
+            "black"
+        ],
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        },
+        "files.associations": {
+            "Containerfile": "dockerfile",
+            "Podmanfile": "dockerfile",
+            "*.yml": "yaml",
+            "*.yaml": "yaml"
+        },
+        "files.exclude": {
+            "**/__pycache__": true,
+            "**/*.pyc": true,
+            "**/.pytest_cache": true,
+            "**/node_modules": true,
+            "**/.git": false
+        },
+        "search.exclude": {
+            "**/__pycache__": true,
+            "**/*.pyc": true,
+            "**/.pytest_cache": true,
+            "**/node_modules": true
+        },
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": [
+            "tests"
+        ],
+        "python.testing.unittestEnabled": false,
+        "python.testing.autoTestDiscoverOnSaveEnabled": true,
+        "terminal.integrated.defaultProfile.windows": "PowerShell",
+        "yaml.schemas": {
+            "https://json.schemastore.org/docker-compose.json": [
+                "podman-compose*.yml",
+                "docker-compose*.yml"
+            ]
+        },
+        "editor.rulers": [
+            88
+        ],
+        "python.linting.flake8Args": [
+            "--max-line-length=88",
+            "--extend-ignore=E203,W503"
+        ],
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+        "files.trimFinalNewlines": true
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-python.python",
+            "ms-python.black-formatter",
+            "ms-python.isort",
+            "ms-python.flake8",
+            "ms-python.debugpy",
+            "ms-vscode.vscode-json",
+            "redhat.vscode-yaml",
+            "ms-vscode.vscode-docker"
+        ],
+        "unwantedRecommendations": [
+            "ms-azuretools.vscode-docker",
+            "ms-vscode.powershell",
+            "github.copilot",
+            "github.copilot-chat",
+            "ms-toolsai.jupyter",
+            "ms-python.pylint",
+            "github.vscode-pull-request-github",
+            "eamodio.gitlens"
+        ]
+    },
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "Python: Attach to App Container",
+                "type": "debugpy",
+                "request": "attach",
+                "connect": {
+                    "host": "localhost",
+                    "port": 5678
+                },
+                "pathMappings": [
+                    {
+                        "localRoot": "${workspaceFolder}",
+                        "remoteRoot": "/app"
+                    }
+                ],
+                "justMyCode": true,
+                "preLaunchTask": "Compose Up (Dev)"
+            },
+            {
+                "name": "Python: Attach to Test Container",
+                "type": "debugpy",
+                "request": "attach",
+                "connect": {
+                    "host": "localhost",
+                    "port": 5679
+                },
+                "pathMappings": [
+                    {
+                        "localRoot": "${workspaceFolder}",
+                        "remoteRoot": "/app"
+                    }
+                ],
+                "justMyCode": true,
+                "preLaunchTask": "Debug Tests"
+            },
+            {
+                "name": "Python: Local Debug",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "${workspaceFolder}/src/xcloud_mcp/main.py",
+                "console": "integratedTerminal",
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src"
+                },
+                "envFile": "${workspaceFolder}/.env"
+            }
+        ]
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "Compose Up (Dev)",
+                "type": "shell",
+                "command": "podman-compose",
+                "args": [
+                    "up",
+                    "--build"
+                ],
+                "group": {
+                    "kind": "build",
+                    "isDefault": true
+                },
+                "detail": "Builds and starts the services for development.",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared",
+                    "showReuseMessage": true,
+                    "clear": false
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "Compose Down",
+                "type": "shell",
+                "command": "podman-compose",
+                "args": [
+                    "down"
+                ],
+                "group": "build",
+                "detail": "Stops and removes the services.",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "silent",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "Run Tests",
+                "type": "shell",
+                "command": "podman-compose",
+                "args": [
+                    "-f",
+                    "podman-compose.test.yml",
+                    "up",
+                    "--build",
+                    "--abort-on-container-exit"
+                ],
+                "group": "test",
+                "detail": "Runs the test suite in a dedicated container.",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": true,
+                    "panel": "new"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "Debug Tests",
+                "type": "shell",
+                "command": "podman-compose",
+                "args": [
+                    "-f",
+                    "podman-compose.debug-test.yml",
+                    "up",
+                    "--build"
+                ],
+                "group": "test",
+                "detail": "Starts the test container with the debugger attached.",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "View Logs",
+                "type": "shell",
+                "command": "podman-compose",
+                "args": [
+                    "logs",
+                    "-f"
+                ],
+                "detail": "Follows the logs of the running services.",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": true,
+                    "panel": "new"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "Lint Python Code",
+                "type": "shell",
+                "command": "python",
+                "args": [
+                    "-m",
+                    "flake8",
+                    "src",
+                    "tests"
+                ],
+                "group": "build",
+                "detail": "Runs flake8 linting on the Python code.",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": true,
+                    "panel": "shared"
+                },
+                "problemMatcher": "$python"
+            },
+            {
+                "label": "Format Python Code",
+                "type": "shell",
+                "command": "python",
+                "args": [
+                    "-m",
+                    "black",
+                    "src",
+                    "tests"
+                ],
+                "group": "build",
+                "detail": "Formats Python code using Black.",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "silent",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "Sort Imports",
+                "type": "shell",
+                "command": "python",
+                "args": [
+                    "-m",
+                    "isort",
+                    "src",
+                    "tests",
+                    "--profile",
+                    "black"
+                ],
+                "group": "build",
+                "detail": "Sorts Python imports using isort.",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "silent",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "Full Code Format",
+                "type": "shell",
+                "dependsOn": [
+                    "Sort Imports",
+                    "Format Python Code"
+                ],
+                "dependsOrder": "sequence",
+                "detail": "Runs both isort and black formatting.",
+                "group": "build"
+            },
+            {
+                "label": "Install Dependencies",
+                "type": "shell",
+                "command": "pip",
+                "args": [
+                    "install",
+                    "-r",
+                    "requirements.txt",
+                    "-r",
+                    "requirements-dev.txt"
+                ],
+                "group": "build",
+                "detail": "Installs Python dependencies.",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": true,
+                    "panel": "shared"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "Clean Python Cache",
+                "type": "shell",
+                "command": "powershell",
+                "args": [
+                    "-Command",
+                    "Get-ChildItem -Path . -Recurse -Name '__pycache__' | Remove-Item -Force -Recurse; Get-ChildItem -Path . -Recurse -Name '*.pyc' | Remove-Item -Force"
+                ],
+                "group": "build",
+                "detail": "Removes Python cache files and directories.",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "silent",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "problemMatcher": []
+            }
+        ]
+    }
+}

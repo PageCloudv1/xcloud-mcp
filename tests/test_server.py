@@ -9,12 +9,11 @@ async def test_health_check():
     """
     Tests if the /health endpoint is reachable and returns a 200 OK status.
     """
-    # Give the server a moment to start up inside the container
-    await asyncio.sleep(2)
+    await asyncio.sleep(30)
     
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.get("http://localhost:8000/health") as response:
+            async with session.get("http://mcp-server:8000/health") as response:
                 assert response.status == 200
                 data = await response.json()
                 assert data == {"status": "ok"}
