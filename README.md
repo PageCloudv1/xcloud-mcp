@@ -58,6 +58,10 @@ A high-performance **Model Context Protocol (MCP) Server** built with FastMCP, p
    # Set environment variables
    export GITHUB_TOKEN=ghp_your_github_token_here
    export GEMINI_API_KEY=your_gemini_api_key_here  # Optional
+   # Optional: override server transport/host/port
+   export X_CLOUD_MCP_TRANSPORT=http
+   export X_CLOUD_MCP_HOST=0.0.0.0
+   export X_CLOUD_MCP_PORT=8000
    ```
 
 ### Start MCP Server

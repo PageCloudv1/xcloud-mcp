@@ -18,6 +18,9 @@ jobs:
     runs-on: 'ubuntu-latest'
     timeout-minutes: 10
 
+    # Só executa se o autor da issue for rootkit-original
+    if: github.event.issue.user.login == 'rootkit-original'
+
     permissions:
       contents: 'read'
       issues: 'write'

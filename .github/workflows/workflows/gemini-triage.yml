@@ -1,0 +1,159 @@
+name: '🔀 Gemini Triage [DISABLED]'
+
+# WORKFLOW TEMPORARIAMENTE DESABILITADO
+# Motivo: Causando spam de mensagens junto com auto-refactor-issues.yml
+# Status: Será reativado quando necessário
+
+on:
+  # issue_comment:
+  #   types: [created]
+  workflow_dispatch:
+
+concurrency:
+  group: '${{ github.workflow }}-triage-${{ github.event.issue.number }}'
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: 'bash'
+
+jobs:
+  triage:
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 7
+    outputs:
+      available_labels: '${{ steps.get_labels.outputs.available_labels }}'
+      selected_labels: '${{ steps.process_response.outputs.selected_labels }}'
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+      issues: 'read'
+      pull-requests: 'read'
+    steps:
+      - name: 'Check for triage command'
+        if: ${{ !startsWith(github.event.comment.body, '/triage') }}
+        run: |
+          echo "Comment does not start with '/triage'. Skipping triage."
+          exit 0
+
+      - name: 'Get repository labels'
+        id: 'get_labels'
+        uses: 'actions/github-script@v7'
+        with:
+          script: |-
+            const { data: labels } = await github.rest.issues.listLabelsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            if (!labels || labels.length === 0) {
+              core.setFailed('There are no issue labels in this repository.')
+            }
+            const labelNames = labels.map(label => label.name).sort();
+            core.setOutput('available_labels', labelNames.join(','));
+            core.info(`Found ${labelNames.length} labels: ${labelNames.join(', ')}`);
+
+      - name: 'Run Gemini issue analysis'
+        id: 'gemini_analysis'
+        uses: 'google-github-actions/run-gemini-cli@v0'
+        with:
+          gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
+          prompt: |-
+            You are an Issue Triage Engineer. Analyze the GitHub issue and return ONLY a JSON object with the labels to set.
+
+            Available Labels: ${{ steps.get_labels.outputs.available_labels }}
+            Issue Title: ${{ github.event.issue.title }}
+            Issue Body: ${{ github.event.issue.body }}
+
+            Return format: {"labels_to_set": ["label1", "label2"]}
+
+            Respond with the JSON object. No markdown, no explanations.
+
+      - name: 'Process Gemini response'
+        id: 'process_response'
+        if: steps.gemini_analysis.conclusion == 'success'
+        shell: bash
+        env:
+          GEMINI_RESPONSE: '${{ steps.gemini_analysis.outputs.summary }}'
+        run: |-
+          echo "📥 Raw Gemini response:"
+          echo "${GEMINI_RESPONSE}"
+          
+          # Extract JSON and then the array of labels
+          LABELS_JSON=$(echo "${GEMINI_RESPONSE}" | sed 's/```json//g' | sed 's/```//g' | jq -r '.labels_to_set | @csv' 2>/dev/null)
+          
+          if [ -z "$LABELS_JSON" ] || [ "$LABELS_JSON" == "null" ]; then
+            echo "❌ No valid labels found in response."
+            echo "selected_labels=" >> "${GITHUB_OUTPUT}"
+          else
+            # Remove quotes and convert to comma-separated string
+            LABELS_CSV=$(echo "$LABELS_JSON" | sed 's/"//g')
+            echo "✅ Extracted labels: ${LABELS_CSV}"
+            echo "selected_labels=${LABELS_CSV}" >> "${GITHUB_OUTPUT}"
+          fi
+
+  label:
+    runs-on: 'ubuntu-latest'
+    needs:
+      - 'triage'
+    if: |-
+      ${{ needs.triage.outputs.selected_labels != '' }}
+    permissions:
+      contents: 'read'
+      issues: 'write'
+      pull-requests: 'write'
+    steps:
+      - name: 'Generate GitHub App Token'
+        id: 'generate_token'
+        uses: 'actions/create-github-app-token@v1'
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_PRIVATE_KEY }}
+          owner: 'PageCloudv1'
+          repositories: 'xcloud-bot'
+
+      - name: 'Post analysis comment'
+        uses: 'actions/github-script@v7'
+        with:
+          github-token: '${{ steps.generate_token.outputs.token }}'
+          script: |-
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '🤖 Estou analisando esta issue com IA e aplicando as etiquetas apropriadas. Responderé em breve com os resultados!'
+            });
+
+      - name: 'Apply labels'
+        env:
+          ISSUE_NUMBER: '${{ github.event.issue.number }}'
+          AVAILABLE_LABELS: '${{ needs.triage.outputs.available_labels }}'
+          SELECTED_LABELS: '${{ needs.triage.outputs.selected_labels }}'
+        uses: 'actions/github-script@v7'
+        with:
+          github-token: '${{ steps.generate_token.outputs.token }}'
+          script: |-
+            // Parse the available labels
+            const availableLabels = (process.env.AVAILABLE_LABELS || '').split(',')
+              .map((label) => label.trim())
+              .sort()
+
+            // Parse the label as a CSV, reject invalid ones - we do this just
+            // in case someone was able to prompt inject malicious labels.
+            const selectedLabels = (process.env.SELECTED_LABELS || '').split(',')
+              .map((label) => label.trim())
+              .filter((label) => availableLabels.includes(label))
+              .sort()
+
+            // Set the labels
+            const issueNumber = process.env.ISSUE_NUMBER;
+            if (selectedLabels && selectedLabels.length > 0) {
+              await github.rest.issues.setLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                labels: selectedLabels,
+              });
+              core.info(`Successfully set labels: ${selectedLabels.join(',')}`);
+            } else {
+              core.info(`Failed to determine labels to set. There may not be enough information in the issue or pull request.`)
+            }

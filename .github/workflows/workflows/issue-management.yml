@@ -1,0 +1,194 @@
+name: '🤖 Smart Issue Management - xCloud Team [DISABLED]'
+
+# WORKFLOW DESABILITADO TEMPORARIAMENTE
+# Motivo: Conflita com auto-refactor-issues.yml causando spam de mensagens
+# Status: Será reativado após integração completa dos sistemas
+
+on:
+  # issues:
+  #   types: [opened, reopened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Número da issue para processar'
+        required: false
+        type: string
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.event_name }}-${{ github.event.issue.number || inputs.issue_number || github.run_id }}'
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  smart-triage:
+    name: '🧠 Análise Inteligente de Issue'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    
+    steps:
+      - name: 'Checkout repository'
+        uses: actions/checkout@v4
+
+      - name: 'Mint GitHub App Token'
+        id: 'mint_token'
+        if: |-
+          ${{ vars.GH_APP_ID }}
+        uses: 'actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b'
+        with:
+          app-id: '${{ vars.GH_APP_ID }}'
+          private-key: '${{ secrets.GH_PRIVATE_KEY }}'
+
+      - name: '⚙️ Configure Node 20'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: '🤖 Processar Issue com Gemini + GitHub MCP'
+        uses: 'google-github-actions/run-gemini-cli@v0.1.12'  # Pinned version for security
+        env:
+          TITLE: '${{ github.event.issue.title }}'
+          DESCRIPTION: '${{ github.event.issue.body }}'
+          ISSUE_NUMBER: '${{ github.event.issue.number || inputs.issue_number }}'
+          ISSUE_AUTHOR: '${{ github.event.issue.user.login }}'
+          REPOSITORY: '${{ github.repository }}'
+          GH_TOKEN: '${{ steps.mint_token.outputs.token || github.token }}'
+        with:
+          gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
+          gemini_model: 'gemini-2.5-flash'
+          gemini_debug: true
+          settings: |-
+            {
+              "maxSessionTurns": 15,
+              "telemetry": {
+                "enabled": false,
+                "target": "none"
+              },
+              "mcpServers": {
+                "github": {
+                  "command": "docker",
+                  "args": [
+                    "run",
+                    "-i",
+                    "--rm",
+                    "-e",
+                    "GITHUB_PERSONAL_ACCESS_TOKEN",
+                    "ghcr.io/github/github-mcp-server"
+                  ],
+                  "includeTools": [
+                    "add_issue_comment",
+                    "get_issue",
+                    "get_issue_comments",
+                    "list_issues",
+                    "search_issues",
+                    "update_issue"
+                  ],
+                  "env": {
+                    "GITHUB_PERSONAL_ACCESS_TOKEN": "${GH_TOKEN}"
+                  }
+                }
+              },
+              "coreTools": [
+                "run_shell_command(echo)",
+                "run_shell_command(grep)"
+              ]
+            }
+          prompt: |-
+            # 🤖 xCloud Team - Assistente Inteligente de Issues
+
+            ## Sua Missão
+            Você é o assistente oficial da **xcloud-team** especializado em análise e triagem inteligente de issues do GitHub.
+
+            ## Dados da Issue Atual
+            - **Título**: ${TITLE}
+            - **Descrição**: ${DESCRIPTION}
+            - **Número**: #${ISSUE_NUMBER}
+            - **Autor**: ${ISSUE_AUTHOR}
+            - **Repositório**: ${REPOSITORY}
+
+            ## Processo de Análise (Execute TODOS os passos)
+
+            ### 1. 🔍 **Pesquisa de Duplicatas**
+            Use `mcp__github__search_issues` para procurar issues similares:
+            - Procure por palavras-chave do título
+            - Verifique issues fechadas recentemente
+            - Se encontrar duplicata, comente na issue mencionando a issue original
+
+            ### 2. 🏷️ **Classificação e Labels**
+            Analise o conteúdo e aplique labels apropriados usando `mcp__github__update_issue`:
+
+            **Labels Técnicos:**
+            - `bug` - Relatórios de erro
+            - `feature` - Solicitações de funcionalidade
+            - `enhancement` - Melhorias
+            - `documentation` - Documentação
+            - `question` - Perguntas/dúvidas
+            - `security` - Questões de segurança
+            - `performance` - Problemas de performance
+
+            **Labels de Prioridade:**
+            - `priority:high` - Crítico/urgente
+            - `priority:medium` - Importante
+            - `priority:low` - Baixa prioridade
+
+            **Labels de Categoria:**
+            - `category:api` - Relacionado à API
+            - `category:ui` - Interface de usuário
+            - `category:infrastructure` - Infraestrutura
+            - `category:workflow` - Workflows/CI-CD
+            - `category:bot` - Funcionalidades do bot
+
+            ### 3. 👥 **Assignment Automático**
+            Use `mcp__github__update_issue` para:
+            - Garantir que `assignees` inclua `xcloud-bot`
+            - Selecione um membro disponível da equipe `PageCloudv1/xcloud-team`
+            - Para issues críticas de segurança, mencione a equipe adicionando o sinal de arroba manualmente (`PageCloudv1/xcloud-team`) e garanta acompanhamento imediato
+
+            ### 4. 💬 **Resposta Inteligente**
+            Use `mcp__github__add_issue_comment` para adicionar um comentário estruturado:
+
+            ```markdown
+            ## 🤖 Análise Automática - xCloud Team
+
+            ### 📋 **Classificação**
+            - **Tipo**: [bug/feature/enhancement/question/etc]
+            - **Prioridade**: [high/medium/low]
+            - **Categoria**: [api/ui/infrastructure/etc]
+
+            ### 🔍 **Status de Duplicatas**
+            - [✅ Não encontradas duplicatas] OU [⚠️ Possível duplicata: #123]
+
+            ### 📝 **Análise Técnica**
+            [Sua análise do conteúdo da issue - seja específico e útil]
+
+            ### 🎯 **Próximos Passos Recomendados**
+            1. [Ação específica 1]
+            2. [Ação específica 2]
+            3. [Se aplicável, menção a recursos ou documentação relevante]
+
+            ### 👥 **Assignments**
+            - **Owners**: inclua menções para PageCloudv1/xcloud-team e xcloud-bot[bot] (use o caractere arroba na resposta final)
+            - **Atenção Extra**: mencione a equipe PageCloudv1/xcloud-team em casos críticos/segurança (use arroba ao comentar)
+
+            ---
+            🤖 *Processado automaticamente pelo xCloud Bot | Dúvidas? Marque a equipe PageCloudv1/xcloud-team (com arroba na resposta)*
+            ```
+
+            ## ⚠️ Regras Importantes
+            1. **SEMPRE** pesquise duplicatas antes de processar
+            2. **SEMPRE** aplique pelo menos 2 labels (tipo + prioridade)
+            3. **SEMPRE** mantenha `xcloud-bot` entre os assignees
+            4. **SEMPRE** adicione um comentário explicativo
+            5. Se a issue for de **segurança** ou **crítica**, acione a equipe PageCloudv1/xcloud-team imediatamente (lembre de usar arroba na resposta final)
+            6. Seja **específico** e **útil** nos comentários
+            7. Use linguagem **profissional** mas **acessível**
+
+            ## 🚀 Comece Agora
+            Execute o processo completo de análise para a issue #${ISSUE_NUMBER}.

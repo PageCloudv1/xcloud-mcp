@@ -8,9 +8,9 @@ FastMCP server para integração com AI e ferramentas de automação
 from fastmcp import FastMCP
 import asyncio
 import json
-import subprocess
 import os
-from typing import List, Dict, Optional
+import subprocess
+from typing import Dict, List
 from datetime import datetime
 import aiohttp
 import logging
@@ -35,19 +35,33 @@ GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GITHUB_API_BASE = "https://api.github.com"
 
+# Configuração de transporte do servidor
+DEFAULT_TRANSPORT = os.getenv("X_CLOUD_MCP_TRANSPORT", "http")
+DEFAULT_HOST = os.getenv("X_CLOUD_MCP_HOST", "0.0.0.0")
+DEFAULT_PORT_RAW = os.getenv("X_CLOUD_MCP_PORT", "8000")
+
 
 
 async def github_api_request(endpoint: str, method: str = "GET", data: Dict = None) -> Dict:
     """Faz requisições para a API do GitHub, com tratamento de erros."""
+    if not GITHUB_TOKEN:
+        logging.error("GITHUB_TOKEN não configurado. Configure o token antes de chamar a API do GitHub.")
+        return {
+            "error": {
+                "type": "CONFIG_ERROR",
+                "message": "Variável de ambiente GITHUB_TOKEN não encontrada."
+            }
+        }
+
     headers = {
-        "Authorization": f"token {GITHUB_TOKEN}",
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json"
     }
-    
+
     try:
         async with aiohttp.ClientSession() as session:
             url = f"{GITHUB_API_BASE}{endpoint}"
-            
+
             async with session.request(method, url, headers=headers, json=data if method != "GET" else None) as response:
                 response_data = await response.json()
                 if response.status >= 400:
@@ -73,7 +87,7 @@ async def github_api_request(endpoint: str, method: str = "GET", data: Dict = No
 async def analyze_repository(repo_url: str, analysis_type: str = "general") -> Dict:
     """
     Analisa um repositório GitHub e sugere melhorias
-    
+
     Args:
         repo_url: URL do repositório (ex: PageCloudv1/xcloud-bot)
         analysis_type: Tipo de análise (general, workflows, security, performance)
@@ -84,27 +98,27 @@ async def analyze_repository(repo_url: str, analysis_type: str = "general") -> D
         if "/" not in repo_url:
             logging.warning(f"URL inválida fornecida: {repo_url}")
             return {"error": "URL inválida. Use formato: owner/repo"}
-        
+
         owner, repo = repo_url.split("/")[-2:]
-        
+
         # Busca informações do repositório
         repo_data = await github_api_request(f"/repos/{owner}/{repo}")
         if "error" in repo_data:
             logging.error(f"Falha ao buscar dados do repositório {owner}/{repo}: {repo_data['error']}")
             return repo_data
-        
+
         # Busca workflows
         workflows = await github_api_request(f"/repos/{owner}/{repo}/actions/workflows")
         if "error" in workflows:
             logging.error(f"Falha ao buscar workflows para {owner}/{repo}: {workflows['error']}")
             return workflows
-        
+
         # Busca runs recentes
         runs = await github_api_request(f"/repos/{owner}/{repo}/actions/runs?per_page=20")
         if "error" in runs:
             logging.error(f"Falha ao buscar runs para {owner}/{repo}: {runs['error']}")
             return runs
-        
+
         # Análise básica
         analysis = {
             "repository": f"{owner}/{repo}",
@@ -122,10 +136,10 @@ async def analyze_repository(repo_url: str, analysis_type: str = "general") -> D
                 "failed_runs": len([r for r in runs.get("workflow_runs", []) if r["conclusion"] == "failure"])
             }
         }
-        
+
         # Sugestões baseadas na análise
         suggestions = []
-        
+
         if analysis["workflows"]["total"] == 0:
             suggestions.append({
                 "type": "workflow",
@@ -133,7 +147,7 @@ async def analyze_repository(repo_url: str, analysis_type: str = "general") -> D
                 "title": "Implementar workflows CI/CD",
                 "description": "Repositório não possui workflows GitHub Actions configurados"
             })
-        
+
         if analysis["recent_activity"]["failed_runs"] > 0:
             failure_rate = analysis["recent_activity"]["failed_runs"] / max(analysis["recent_activity"]["total_runs"], 1)
             if failure_rate > 0.2:  # 20% de falha
@@ -143,13 +157,13 @@ async def analyze_repository(repo_url: str, analysis_type: str = "general") -> D
                     "title": "Melhorar confiabilidade dos workflows",
                     "description": f"Taxa de falha alta: {failure_rate:.1%}"
                 })
-        
+
         analysis["suggestions"] = suggestions
         analysis["timestamp"] = datetime.now().isoformat()
-        
+
         logging.info(f"Análise do repositório {repo_url} concluída com sucesso.")
         return analysis
-        
+
     except Exception as e:
         logging.error(f"Erro na análise do repositório {repo_url}: {str(e)}")
         return {"error": f"Erro na análise: {str(e)}"}
@@ -158,7 +172,7 @@ async def analyze_repository(repo_url: str, analysis_type: str = "general") -> D
 async def create_workflow_issue(repo: str, workflow_type: str, title: str = None) -> Dict:
     """
     Cria uma issue para implementar um workflow específico
-    
+
     Args:
         repo: Repositório (owner/repo)
         workflow_type: Tipo do workflow (ci, cd, build, test, deploy, main)
@@ -167,7 +181,7 @@ async def create_workflow_issue(repo: str, workflow_type: str, title: str = None
     logging.info(f"Tentando criar issue de workflow '{workflow_type}' no repositório {repo}")
     try:
         owner, repo_name = repo.split("/")[-2:]
-        
+
         workflow_templates = {
             "ci": {
                 "title": "🔄 Implementar Workflow CI (Integração Contínua)",
@@ -237,7 +251,7 @@ _Issue criada automaticamente pelo xCloud Bot_"""
 Implementar workflow especializado para builds reutilizáveis.
 
 ### ✅ Checklist de Implementação
-- [ ] Criar arquivo `.github/workflows/build.yml` 
+- [ ] Criar arquivo `.github/workflows/build.yml`
 - [ ] Configurar `workflow_call`
 - [ ] Implementar build otimizado
 - [ ] Análise de artefatos
@@ -253,29 +267,29 @@ Implementar workflow especializado para builds reutilizáveis.
 _Issue criada automaticamente pelo xCloud Bot_"""
             }
         }
-        
+
         if workflow_type not in workflow_templates:
             logging.error(f"Tipo de workflow inválido solicitado: {workflow_type}")
             return {"error": f"Tipo de workflow inválido: {workflow_type}"}
-        
+
         template = workflow_templates[workflow_type]
-        
+
         issue_data = {
             "title": title or template["title"],
             "body": template["body"],
             "labels": template["labels"]
         }
-        
+
         result = await github_api_request(
             f"/repos/{owner}/{repo_name}/issues",
             method="POST",
             data=issue_data
         )
-        
+
         if "error" in result:
             logging.error(f"Erro ao criar issue em {repo}: {result['error']}")
             return result
-        
+
         logging.info(f"Issue {result.get('number')} criada com sucesso em {repo}")
         return {
             "success": True,
@@ -283,7 +297,7 @@ _Issue criada automaticamente pelo xCloud Bot_"""
             "issue_number": result.get("number"),
             "title": result.get("title")
         }
-        
+
     except Exception as e:
         logging.error(f"Exceção ao criar issue em {repo}: {str(e)}")
         return {"error": f"Erro: {str(e)}"}
@@ -292,7 +306,7 @@ _Issue criada automaticamente pelo xCloud Bot_"""
 async def monitor_ci_status(repo: str, limit: int = 10) -> List[Dict]:
     """
     Monitora status de workflows CI em um repositório
-    
+
     Args:
         repo: Repositório (owner/repo)
         limit: Número máximo de runs para analisar
@@ -300,13 +314,13 @@ async def monitor_ci_status(repo: str, limit: int = 10) -> List[Dict]:
     logging.info(f"Monitorando status de CI para o repositório {repo} (limite: {limit})")
     try:
         owner, repo_name = repo.split("/")[-2:]
-        
+
         runs = await github_api_request(f"/repos/{owner}/{repo_name}/actions/runs?per_page={limit}")
-        
+
         if "error" in runs:
             logging.error(f"Erro ao buscar workflow runs para {repo}: {runs['error']}")
             return runs
-        
+
         status_data = []
         workflow_runs = runs.get("workflow_runs", [])
         for run in workflow_runs:
@@ -320,10 +334,10 @@ async def monitor_ci_status(repo: str, limit: int = 10) -> List[Dict]:
                 "created_at": run["created_at"],
                 "html_url": run["html_url"]
             })
-        
+
         logging.info(f"Monitoramento de CI para {repo} concluído. {len(status_data)} runs encontradas.")
         return status_data
-        
+
     except Exception as e:
         logging.error(f"Exceção ao monitorar CI para {repo}: {str(e)}")
         return {"error": f"Erro: {str(e)}"}
@@ -336,11 +350,11 @@ async def get_xcloud_repositories() -> List[Dict]:
     logging.info("Buscando repositórios xCloud da organização PageCloudv1")
     try:
         repos = await github_api_request("/orgs/PageCloudv1/repos?per_page=100")
-        
+
         if "error" in repos:
             logging.error(f"Erro ao buscar repositórios da organização: {repos['error']}")
             return repos
-            
+
         xcloud_repos = [
             {
                 "name": repo["name"],
@@ -353,7 +367,7 @@ async def get_xcloud_repositories() -> List[Dict]:
             for repo in repos
             if repo["name"].startswith("xcloud-")
         ]
-        
+
         # Verifica se cada repo tem workflows
         for repo in xcloud_repos:
             workflows = await github_api_request(f"/repos/{repo['full_name']}/actions/workflows")
@@ -363,10 +377,40 @@ async def get_xcloud_repositories() -> List[Dict]:
                 repo["error_checking_workflows"] = workflows['error']
             else:
                 repo["has_workflows"] = workflows.get("total_count", 0) > 0
-        
+
         logging.info(f"Encontrados {len(xcloud_repos)} repositórios xCloud.")
         return xcloud_repos
-        
+
     except Exception as e:
         logging.error(f"Exceção ao buscar repositórios xCloud: {str(e)}")
         return {"error": f"Erro: {str(e)}"}
+
+
+def run_server(
+    transport: str = DEFAULT_TRANSPORT,
+    host: str = DEFAULT_HOST,
+    port: int | str | None = None,
+    **transport_kwargs,
+) -> None:
+    """Inicializa o servidor FastMCP com o transporte configurado."""
+    logging.info("Iniciando xCloud MCP Server com transporte '%s'", transport)
+
+    http_transports = {"http", "streamable-http", "sse"}
+    if transport in http_transports:
+        port_value = port if port is not None else DEFAULT_PORT_RAW
+        try:
+            port_int = int(port_value)
+        except (TypeError, ValueError):
+            logging.warning(
+                "Porta '%s' inválida para transporte HTTP. Usando porta padrão 8000.",
+                port_value,
+            )
+            port_int = 8000
+
+        app.run(transport=transport, host=host, port=port_int, **transport_kwargs)
+    else:
+        app.run(transport=transport, **transport_kwargs)
+
+
+if __name__ == "__main__":
+    run_server()
