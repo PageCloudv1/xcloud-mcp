@@ -1,6 +1,4 @@
 import pytest
-import aiohttp
-import asyncio
 
 # Mark all tests in this file as async
 pytestmark = pytest.mark.asyncio
@@ -29,5 +27,5 @@ pytestmark = pytest.mark.asyncio
 #                     "Could not connect to the server within the timeout period. "
 #                     "Is it running and accessible at http://localhost:8000?"
 #                 )
-            
+
 #             await asyncio.sleep(wait_interval)

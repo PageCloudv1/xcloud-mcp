@@ -1,0 +1,17 @@
+[flake8]
+max-line-length = 127
+max-complexity = 10
+exclude = 
+    .git,
+    __pycache__,
+    .pytest_cache,
+    htmlcov,
+    dist,
+    build,
+    *.egg-info
+# E402: module level import not at top of file (allowed for test path setup)
+# E501: line too long (handled by Black)
+# W503: line break before binary operator (conflicts with Black)
+per-file-ignores =
+    tests/*:E402
+ignore = E203,W503

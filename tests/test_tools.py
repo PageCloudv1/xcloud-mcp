@@ -433,7 +433,6 @@ async def test_github_api_request_function_exists():
     assert sig.parameters["data"].default is None
 
 
-
 async def test_github_api_request_method_validation(mocker):
     """
     Tests github_api_request method parameter validation for supported methods.
@@ -441,6 +440,7 @@ async def test_github_api_request_method_validation(mocker):
     from xcloud_mcp.main import github_api_request
 
     # Arrange
+    mocker.patch("xcloud_mcp.main.GITHUB_TOKEN", "fake_token")
     mock_session = mocker.patch("aiohttp.ClientSession.request")
     mock_response = mock_session.return_value.__aenter__.return_value
     mock_response.status = 200
