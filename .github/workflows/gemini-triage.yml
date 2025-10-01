@@ -109,7 +109,7 @@ jobs:
           app-id: ${{ secrets.GH_APP_ID }}
           private-key: ${{ secrets.GH_PRIVATE_KEY }}
           owner: 'PageCloudv1'
-          repositories: 'xcloud-bot'
+          repositories: 'xcloud-mcp'
 
       - name: 'Post analysis comment'
         uses: 'actions/github-script@v7'
