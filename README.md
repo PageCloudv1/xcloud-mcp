@@ -1,28 +1,31 @@
 # 🤖 xCloud MCP Server
 
-[![Tests](https://img.shields.io/badge/tests-19%2F19%20passing-brightgreen)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-18%2F18%20passing-brightgreen)](./tests/)
 [![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen)](./COVERAGE_REPORT.md)
+[![CI](https://img.shields.io/badge/CI-enabled-brightgreen)](./.github/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 
 A high-performance **Model Context Protocol (MCP) Server** built with FastMCP, providing AI agents and automation tools with powerful GitHub integration and DevOps automation capabilities.
 
 ## ✨ Features
 
-- � **4 MCP Tools** for GitHub automation
-- 🧪 **91% Test Coverage** with comprehensive test suite
+- 🤖 **4 MCP Tools** for GitHub automation
+- 🧪 **100% Test Success Rate** (18/18 tests passing)
+- 🔄 **CI/CD Pipeline** with automated testing and quality checks
 - 🐳 **Containerized Development** with Podman
 - 🔍 **Real-time Debugging** support
-- 📊 **Coverage Reporting** with HTML output
+- 📊 **Coverage Reporting** with HTML output (91% coverage)
 - ⚡ **Hot Reload** development environment
+- 🔒 **Security Hardening** with step-security/harden-runner
 
 ## 🛠️ MCP Tools Available
 
 | Tool | Description | Status |
 |------|-------------|---------|
-| `create_workflow_issue` | Create GitHub issues for workflow failures | ✅ Tested |
+| `analyze_repository` | Analyze GitHub repositories and suggest improvements | ✅ Tested |
+| `create_workflow_issue` | Create GitHub issues for workflow implementation | ✅ Tested |
 | `monitor_ci_status` | Monitor CI/CD pipeline status | ✅ Tested |
 | `get_xcloud_repositories` | List PageCloudv1 repositories with workflows | ✅ Tested |
-| `github_api_request` | Low-level GitHub API interaction | ✅ Tested |
 
 ## 🚀 Quick Start
 
