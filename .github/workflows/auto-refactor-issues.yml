@@ -1,0 +1,118 @@
+name: '🔄 Auto-Refactor Issues by rootkit-original'
+
+on:
+  issues:
+    types: [opened]
+
+concurrency:
+  group: '${{ github.workflow }}-refactor-${{ github.event.issue.number }}'
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: 'bash'
+
+jobs:
+  auto-refactor:
+    name: '🔄 Refatorar e Auto-Assinar Issue'
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 10
+
+    permissions:
+      contents: 'read'
+      issues: 'write'
+      pull-requests: 'read'
+
+    steps:
+      - name: 'Generate GitHub App Token'
+        id: 'generate_token'
+        uses: 'actions/create-github-app-token@v1'
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_PRIVATE_KEY }}
+          owner: 'PageCloudv1'
+          repositories: 'xcloud-bot'
+
+      - name: '� Aplicar Auto-Atribuição Simples'
+        uses: 'actions/github-script@v7'
+        with:
+          github-token: '${{ steps.generate_token.outputs.token }}'
+          script: |-
+            // Auto-assinar para rootkit-original
+            await github.rest.issues.addAssignees({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              assignees: ['rootkit-original']
+            });
+
+            // Adicionar label de auto-refatoração
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['🤖 auto-refactored', '👤 rootkit-original']
+            });
+
+            core.info('Issue auto-assinada para rootkit-original');
+
+      - name: '💬 Postar Comentário de Confirmação'
+        uses: 'actions/github-script@v7'
+        with:
+          github-token: '${{ steps.generate_token.outputs.token }}'
+          script: |-
+            const comentario = `## 🔄 Auto-Atribuição Aplicada
+
+            🤖 **xCloud Bot** identificou que esta issue foi criada por @rootkit-original e aplicou as seguintes ações automaticamente:
+
+            ### ✅ **Ações Realizadas**
+            - **Auto-assinatura**: Issue atribuída automaticamente para você
+            - **Labels aplicadas**: \`🤖 auto-refactored\` e \`👤 rootkit-original\`
+
+            ### 🔄 **Próximos Passos**
+            - O sistema de refatoração inteligente será implementado em breve
+            - Por enquanto, a issue está pronta para seu desenvolvimento
+
+            ### 🤝 **Assistência do Copilot**
+            
+            @Copilot está disponível para ajudar com esta issue! Você pode:
+            - Pedir sugestões de implementação
+            - Solicitar análise de código
+            - Obter ajuda com debugging
+            - Discutir a melhor abordagem
+
+            ---
+            🔄 *Auto-atribuição aplicada | Sistema básico funcionando*`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comentario
+            });
+
+      - name: '❌ Notificar Falha na Auto-Atribuição'
+        if: failure()
+        uses: 'actions/github-script@v7'
+        with:
+          github-token: '${{ steps.generate_token.outputs.token }}'
+          script: |-
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `## ⚠️ Falha na Auto-Atribuição
+
+              🤖 **xCloud Bot** encontrou um problema ao tentar aplicar a auto-atribuição nesta issue.
+
+              ### 🔍 **O que Aconteceu**
+              Ocorreu um erro durante o processo de auto-atribuição automática.
+
+              ### 📋 **Ações Manuais Necessárias**
+              - Atribua a issue para si mesmo manualmente
+              - Aplique as labels apropriadas
+
+              ---
+              ⚠️ *Auto-atribuição falhou | Ação manual necessária*`
+            });
