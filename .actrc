@@ -1,0 +1,4 @@
+# Act configuration for xcloud-mcp
+--container-architecture linux/amd64
+--platform ubuntu-latest=catthehacker/ubuntu:act-latest
+--env-file /dev/null
